@@ -5,13 +5,12 @@ import ultilities.Registravel;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
     private static List<funcionarios> funcionario = new ArrayList<>();
     private static Scanner scanner = new Scanner(System.in);
+
 
     public static void main(String[] args) {
         int opcao = -1;
@@ -58,6 +57,7 @@ public class Main {
 
         if(f != null){
             funcionario.add(f);
+
             System.out.println("Funcionario Cadastrado!");
         }else {
             System.out.println("Cancelando adição de funcionario...");
@@ -66,29 +66,45 @@ public class Main {
 
     }
 
-    private static void gerenciarRegistroPonto(){
-        Registravel f = new Registravel() {
-            @Override
-            public void registrarPonto(LocalDateTime entryTime, LocalDateTime exitTime) {
-                Registravel.super.registrarPonto(entryTime, exitTime);
-            }
-        };
+    private static void gerenciarRegistroPonto() {
         DateTimeFormatter parser = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-        try{
+        System.out.print("ID do funcionário: ");
+        int id = scanner.nextInt();
+        scanner.nextLine();
 
-            if(f instanceof Registravel registravel){
-            System.out.println("Digite a data e hora de ENTRADA (dd/MM/yyyy HH:mm): ");
-            String entradaStr = scanner.nextLine();
-            LocalDateTime entrada = LocalDateTime.parse(entradaStr, parser);
-            System.out.println("Digite a data e hora de SAÍDA (dd/MM/yyyy HH:mm): ");
-            String saidaStr = scanner.nextLine();
-            LocalDateTime saida = LocalDateTime.parse(saidaStr, parser);
+        // Busca o funcionário na lista
+        funcionarios f = funcionario.stream()
+                .filter(func -> func.getId() == id)
+                .findFirst()
+                .orElse(null);
 
-            f.registrarPonto(entrada, saida);
-        }
-        }catch (Exception e){
-            throw new RuntimeException("Formato de data inválido! Use: 05/05/2026 09:00! Erro: " + e.getMessage());
+        if (f instanceof Registravel r) {
+            try {
+                System.out.println("Digite a data e hora de ENTRADA (dd/MM/yyyy HH:mm): ");
+                String entradaStr = scanner.nextLine();
+                LocalDateTime entrada = LocalDateTime.parse(entradaStr, parser);
+
+                System.out.println("Digite a data e hora de SAÍDA (dd/MM/yyyy HH:mm): ");
+                String saidaStr = scanner.nextLine();
+                LocalDateTime saida = LocalDateTime.parse(saidaStr, parser);
+
+                // Valida as regras (horas extras, limites, etc)
+                r.registrarPonto(entrada, saida);
+
+                // Se chegou aqui, as regras passaram. Agora salvamos.
+                String registroPronto = "Entrada: " + entradaStr + " | Saída: " + saidaStr;
+                f.salvarPonto(registroPronto);
+
+                System.out.println("Ponto salvo com sucesso!");
+
+            } catch (Exception e) {
+                // Apenas avisa o erro sem fechar o programa
+                System.out.println("Erro: Formato de data inválido ou regra violada! Use: 05/05/2026 09:00");
+                System.out.println("Detalhe: " + e.getMessage());
+            }
+        } else {
+            System.out.println("ID inválido ou cargo sem permissão de ponto (Gerentes/Estagiários).");
         }
     }
 
@@ -96,7 +112,15 @@ public class Main {
         if (funcionario.isEmpty()) {
             System.out.println("Nenhum funcionário cadastrado.");
         } else {
-            funcionario.forEach(f -> System.out.println("ID: " + f.getId() + " | Nome: " + f.getName() + " | Cargo: " + f.getClass().getSimpleName()));
+            // Abrimos chaves { para que tudo isso aconteça para cada funcionário f
+            funcionario.forEach(f -> {
+                System.out.println("ID: " + f.getId() + " | Nome: " + f.getName() + " | Cargo: " + f.getClass().getSimpleName());
+
+                for (String p : f.getRegistros()) {
+                    System.out.println("   > " + p);
+                }
+                System.out.println("-----------------------------------"); // Linha para separar os funcionários
+            });
         }
     }
 
